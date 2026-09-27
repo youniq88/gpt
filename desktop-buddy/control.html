@@ -1,0 +1,321 @@
+<meta charset="utf-8" />
+<title>Desktop Buddy 조작판</title>
+<style>
+  :root {
+    --bg: #1b1b1d; --card: #26262a; --line: #34343a; --text: #f2f2f2;
+    --dim: #9a9aa2; --green: #35c15f; --blue: #2979ff; --red: #e5484d;
+  }
+  html, body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    font-size: 13px; user-select: none;
+  }
+  main { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+  section { background: var(--card); border-radius: 10px; padding: 10px 12px; }
+  h2 { margin: 0 0 8px; font-size: 12px; color: var(--dim); font-weight: 600; }
+  .row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .row + .row { margin-top: 8px; }
+  .grow { flex: 1; }
+  .dim { color: var(--dim); }
+  button {
+    font: inherit; padding: 5px 10px; border: 0; border-radius: 7px;
+    background: #3a3a40; color: var(--text); cursor: pointer;
+  }
+  button:hover { background: #47474e; }
+  button.on-green { background: #00c853; color: #002b10; font-weight: 700; }
+  button.on-blue { background: var(--blue); color: #fff; font-weight: 700; }
+  button.danger { background: #4a2326; color: #ffb3b5; }
+  button.danger:hover { background: #5e2a2e; }
+  #btn-size { min-width: 56px; font-variant-numeric: tabular-nums; }
+  input[type=range] { accent-color: var(--green); cursor: pointer; }
+  input[type=number] {
+    width: 56px; border: 0; border-radius: 5px; padding: 4px 6px;
+    background: #3a3a40; color: var(--text); font: inherit;
+  }
+  .val { min-width: 32px; text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
+  .label { min-width: 116px; }
+  body:not(.trigger-loud) .loud-only { display: none; }
+  #loud-now { font-size: 18px; font-variant-numeric: tabular-nums; }
+  #motion-rows .row { margin-top: 6px; }
+  .mname {
+    flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    cursor: pointer;
+  }
+  .mname:hover { color: var(--green); }
+  #diag { font-size: 11px; color: var(--dim); font-variant-numeric: tabular-nums; line-height: 1.5; word-break: break-all; }
+  #bar { height: 6px; background: #3a3a40; border-radius: 3px; margin-top: 6px; overflow: hidden; }
+  #bar > i { display: block; height: 100%; width: 0; background: var(--green); transition: width .08s; }
+  #msg {
+    display: none; background: #4a2326; color: #ffd7d8; border-radius: 10px;
+    padding: 10px 12px; white-space: pre-line; line-height: 1.5;
+  }
+  .hint { font-size: 11px; color: var(--dim); margin-top: 6px; line-height: 1.5; }
+</style>
+
+<main>
+  <div id="msg"></div>
+
+  <section>
+    <h2>캐릭터 창</h2>
+    <div class="row">
+      <button id="btn-minus" title="작게">−</button>
+      <button id="btn-size" title="클릭하면 기본 크기(340)로">340</button>
+      <button id="btn-plus" title="크게">+</button>
+      <span class="grow"></span>
+      <button id="btn-through" title="캐릭터 창이 마우스를 무시하게 (뒤의 프로그램을 클릭할 수 있게)">클릭 통과</button>
+    </div>
+    <div class="row">
+      <button id="btn-chroma" title="OBS 크로마키용 초록 배경 켜기/끄기">크로마키</button>
+      <span class="grow"></span>
+      <button id="btn-save" title="현재 크기·위치·민감도·동작·크로마키 설정을 즉시 저장">저장</button>
+      <button id="btn-quit" class="danger">종료</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>소리</h2>
+    <div class="row">
+      <button id="btn-source" title="입 움직임을 무엇에 맞출지: 내 마이크 / PC 에서 나는 소리">입력: 마이크</button>
+    </div>
+    <div class="row" title="오른쪽으로 갈수록 작은 소리에도 반응">
+      <span>민감도</span>
+      <input id="sens" class="grow" type="range" min="0.8" max="6" step="0.1" value="1.8" />
+      <span id="sens-val" class="val">1.8</span>
+    </div>
+    <div id="diag">준비 중…</div>
+    <div id="bar"><i></i></div>
+  </section>
+
+  <section>
+    <h2>동작 <span class="dim" id="motion-hint"></span></h2>
+    <div class="row">
+      <button id="btn-trigger" title="동작이 나오는 방식 바꾸기: 랜덤 ↔ 큰 소리">등장: 랜덤</button>
+      <span class="dim" id="trigger-hint"></span>
+    </div>
+    <div class="row">
+      <span class="label" id="interval-label"></span>
+      <input id="m-interval" type="number" min="2" max="120" step="1" value="8" /> 초
+    </div>
+    <div class="row loud-only">
+      <span class="label" title="평소 목소리의 몇 배가 되면 동작이 나올지. 낮출수록 조금만 커져도 반응">큰 소리 기준</span>
+      <input id="m-loud" type="number" min="1.5" max="5" step="0.1" value="2.3" /> 배
+    </div>
+    <div class="row loud-only" title="지금 목소리가 평소의 몇 배인지. 크게 외쳤을 때의 '최고' 값보다 기준을 낮게 맞추면 동작이 나옵니다">
+      <span class="label">지금 크기</span>
+      <b id="loud-now">준비 중</b>
+      <span class="dim" id="loud-peak"></span>
+    </div>
+    <div id="motion-rows"></div>
+    <div class="hint">▶ 이름을 누르면 바로 재생됩니다. 숫자: 확률(%) · 유지 시간(초)</div>
+  </section>
+
+  <div class="hint">캐릭터를 우클릭하면 이 창이 다시 열립니다. 이 창을 닫아도 캐릭터는 계속 움직입니다.</div>
+</main>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+
+  // ---- 캐릭터 창 크기 ----
+  const STEP = 1.12;
+  const btnSize = $('btn-size');
+  $('btn-plus').onclick = () => window.buddy.resizeBy(STEP);
+  $('btn-minus').onclick = () => window.buddy.resizeBy(1 / STEP);
+  btnSize.onclick = () => window.buddy.resizeTo(340);
+  const showSize = (n) => { btnSize.textContent = Math.round(n); };
+  window.buddy.onSizeChanged(showSize);
+  window.buddy.getSize().then(showSize);
+
+  // ---- 클릭 통과 ----
+  const btnThrough = $('btn-through');
+  const showThrough = (v) => {
+    btnThrough.textContent = v ? '클릭 통과 해제' : '클릭 통과';
+    btnThrough.classList.toggle('on-blue', !!v);
+  };
+  btnThrough.onclick = () => window.buddy.toggleClickThrough();
+  window.buddy.onClickThroughChanged(showThrough);
+  window.buddy.getClickThrough().then(showThrough);
+
+  $('btn-quit').onclick = () => window.buddy.quit();
+
+  // ---- 크로마키 ----
+  const btnChroma = $('btn-chroma');
+  let chromaOn = false;
+  function showChroma() {
+    btnChroma.classList.toggle('on-green', chromaOn);
+    btnChroma.textContent = chromaOn ? '크로마키 끄기' : '크로마키';
+  }
+  btnChroma.onclick = () => {
+    chromaOn = !chromaOn;
+    showChroma();
+    window.buddy.setChroma(chromaOn);
+  };
+
+  // ---- 입력 소스 ----
+  const btnSource = $('btn-source');
+  let audioMode = 'mic';
+  function showSource() {
+    btnSource.textContent = audioMode === 'pc' ? '입력: PC 사운드' : '입력: 마이크';
+    btnSource.classList.toggle('on-blue', audioMode === 'pc');
+  }
+  btnSource.onclick = () => {
+    audioMode = audioMode === 'pc' ? 'mic' : 'pc';
+    showSource();
+    window.buddy.setAudioSource(audioMode);
+  };
+
+  // ---- 민감도 ----
+  const sensEl = $('sens'), sensValEl = $('sens-val');
+  let sens = 1.8;
+  function showSens() {
+    sensEl.value = sens;
+    sensValEl.textContent = sens.toFixed(1);
+  }
+  sensEl.addEventListener('input', () => {
+    sens = Math.max(0.8, Math.min(6, parseFloat(sensEl.value)));
+    showSens();
+    window.buddy.setSensitivity(sens);
+  });
+
+  // ---- 동작 ----
+  let motionCfg = { interval: 8, trigger: 'random', loudRatio: 2.3, items: {} };
+  const isLoud = () => motionCfg.trigger === 'loud';
+  const rowsEl = $('motion-rows'), intervalEl = $('m-interval'), loudEl = $('m-loud');
+  const btnTrigger = $('btn-trigger');
+
+  function saveMotionCfg() { window.buddy.setMotionConfig(motionCfg); }
+
+  function applyTriggerUi() {
+    const loud = isLoud();
+    document.body.classList.toggle('trigger-loud', loud);
+    btnTrigger.textContent = loud ? '등장: 큰 소리' : '등장: 랜덤';
+    btnTrigger.classList.toggle('on-green', loud);
+    $('trigger-hint').textContent = loud ? '목소리를 크게 높이면 나옴' : '정해진 시간마다 확률로 나옴';
+    const il = $('interval-label');
+    il.textContent = loud ? '다음 동작까지 최소' : '몇 초마다 동작 시도';
+    il.title = loud ? '한 번 나온 뒤 다음 동작까지 최소 대기 시간'
+                    : '이 시간마다 주사위를 굴려, 아래 확률(%)대로 동작이 나옴';
+    rowsEl.querySelectorAll('input.m-prob').forEach((el) => {
+      el.title = loud ? '큰 소리가 날 때 여러 동작 중 이 비중으로 골라짐. 0이면 사용 안 함'
+                      : '시도할 때마다 이 확률(%)로 등장. 0이면 사용 안 함';
+    });
+  }
+  btnTrigger.onclick = () => {
+    motionCfg.trigger = isLoud() ? 'random' : 'loud';
+    applyTriggerUi();
+    saveMotionCfg();
+  };
+  loudEl.addEventListener('change', () => {
+    motionCfg.loudRatio = Math.min(5, Math.max(1.5, parseFloat(loudEl.value) || 2.3));
+    loudEl.value = motionCfg.loudRatio.toFixed(1);
+    saveMotionCfg();
+  });
+  intervalEl.addEventListener('change', () => {
+    motionCfg.interval = Math.min(120, Math.max(2, parseInt(intervalEl.value, 10) || 8));
+    intervalEl.value = motionCfg.interval;
+    saveMotionCfg();
+  });
+
+  async function refreshMotionPanel() {
+    const files = await window.buddy.listMotions();
+    intervalEl.value = motionCfg.interval;
+    loudEl.value = (motionCfg.loudRatio || 2.3).toFixed(1);
+    rowsEl.textContent = '';
+    $('motion-hint').textContent = files.length
+      ? `— ${files.length}개 파일` : '— motions 폴더에 이미지를 넣으세요';
+
+    for (const name of files) {
+      if (!motionCfg.items[name]) motionCfg.items[name] = { prob: 0, dur: 2 };
+      const it = motionCfg.items[name];
+      const row = document.createElement('div');
+      row.className = 'row';
+
+      const nm = document.createElement('span');
+      nm.className = 'mname';
+      nm.title = name + ' — 누르면 바로 재생 (소리와 상관없이 확인용)';
+      nm.textContent = '▶ ' + name;
+      nm.addEventListener('click', () => window.buddy.playMotion(name));
+
+      const prob = document.createElement('input');
+      prob.type = 'number'; prob.min = 0; prob.max = 100; prob.step = 1;
+      prob.className = 'm-prob';
+      prob.value = it.prob;
+      prob.addEventListener('change', () => {
+        it.prob = Math.min(100, Math.max(0, parseFloat(prob.value) || 0));
+        prob.value = it.prob;
+        saveMotionCfg();
+      });
+
+      const dur = document.createElement('input');
+      dur.type = 'number'; dur.min = 0.3; dur.max = 60; dur.step = 0.5;
+      dur.value = it.dur;
+      dur.title = '등장했을 때 유지 시간(초)';
+      dur.addEventListener('change', () => {
+        it.dur = Math.min(60, Math.max(0.3, parseFloat(dur.value) || 2));
+        dur.value = it.dur;
+        saveMotionCfg();
+      });
+
+      const p1 = document.createElement('span'); p1.className = 'dim'; p1.textContent = '%';
+      const p2 = document.createElement('span'); p2.className = 'dim'; p2.textContent = '초';
+      row.append(nm, prob, p1, dur, p2);
+      rowsEl.appendChild(row);
+    }
+    applyTriggerUi();
+  }
+  // 창으로 돌아올 때마다 폴더를 다시 읽는다 (파일을 추가했을 수 있으므로)
+  window.addEventListener('focus', refreshMotionPanel);
+
+  // ---- 저장 ----
+  const btnSave = $('btn-save');
+  btnSave.onclick = async () => {
+    window.buddy.setSensitivity(sens);
+    window.buddy.setMotionConfig(motionCfg);
+    window.buddy.setChroma(chromaOn);
+    const ok = await window.buddy.saveNow();
+    btnSave.textContent = ok ? '저장됨 ✓' : '저장 실패!';
+    setTimeout(() => (btnSave.textContent = '저장'), 1600);
+  };
+
+  // ---- 캐릭터 창에서 오는 진단 숫자 ----
+  const loudNowEl = $('loud-now'), loudPeakEl = $('loud-peak');
+  const diagEl = $('diag'), barEl = document.querySelector('#bar > i');
+  window.buddy.onDiag((d) => {
+    if (!d) return;
+    if (!d.ready) {
+      loudNowEl.textContent = `기준 잡는 중 (말하기 ${d.waitSec}초 더)`;
+      loudNowEl.style.color = '';
+      loudNowEl.style.fontSize = '13px';
+      loudPeakEl.textContent = '';
+    } else {
+      loudNowEl.textContent = d.score.toFixed(1) + '배';
+      loudNowEl.style.fontSize = '';
+      loudNowEl.style.color = d.score > d.need ? 'var(--green)' : '';
+      loudPeakEl.textContent = `최근 최고 ${d.peak.toFixed(1)} / 기준 ${d.need.toFixed(1)}`;
+    }
+    diagEl.textContent =
+      `${d.state} | rms ${d.rms.toFixed(4)} | floor ${d.floor.toFixed(4)} | ` +
+      `평균 ${d.localAvg.toFixed(4)} | 입 ${d.open ? '뻥긋' : '닫힘'} | ${String(d.dev).slice(0, 24)}`;
+    barEl.style.width = (d.level * 100).toFixed(0) + '%';
+  });
+  window.buddy.onMsg((text) => {
+    const el = $('msg');
+    el.textContent = text;
+    el.style.display = text ? 'block' : 'none';
+  });
+
+  // ---- 처음 값 불러오기 ----
+  window.buddy.getSettings().then((s) => {
+    s = s || {};
+    if (typeof s.sensitivity === 'number') sens = Math.max(0.8, Math.min(6, s.sensitivity));
+    showSens();
+    audioMode = s.audioSource === 'pc' ? 'pc' : 'mic';
+    showSource();
+    chromaOn = !!s.chroma;
+    showChroma();
+    if (s.motionConfig && typeof s.motionConfig === 'object') {
+      motionCfg = Object.assign({ interval: 8, trigger: 'random', loudRatio: 2.3, items: {} }, s.motionConfig);
+      if (!motionCfg.items || typeof motionCfg.items !== 'object') motionCfg.items = {};
+    }
+    refreshMotionPanel();
+  });
+</script>
