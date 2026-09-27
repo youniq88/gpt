@@ -112,3 +112,13 @@ npm start
   BlackHole 같은 가상 오디오 장치를 따로 설치해야 한다. 마이크 모드는 그대로 된다.
 - 독 아이콘은 숨겨지고, 메뉴막대 아이콘으로 조작한다.
 - 화면이 깨지거나 투명 배경이 이상하면 GPU 가속을 켜고 실행: `NO_GPU=0 npm start`
+
+## 맥 앱으로 만들기
+
+터미널에 아래 한 줄을 붙여넣으면 `Desktop Buddy.app` 을 만들어
+응용 프로그램 폴더에 설치하고 실행한다. 이후엔 Spotlight(⌘+스페이스)에서
+"Desktop Buddy" 로 켠다. 코드를 바꾼 뒤 다시 실행하면 앱도 새로 만들어진다.
+
+```
+curl -fsSL https://raw.githubusercontent.com/youniq88/gpt/claude/dreamy-noether-y5bv0z/desktop-buddy/build-mac.sh | bash
+```
